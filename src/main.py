@@ -6,6 +6,7 @@ from pathlib import Path
 import yfinance as yf
 import pandas as pd
 import warnings
+import inspect
 from datetime import datetime
 from datetime import timedelta
 
@@ -127,6 +128,8 @@ def prepareDataToRequest(dividends) :
 
 def getAssetsData (request_data) :
 
+    result = {}
+
     for date, assets in request_data.items() :
 
         date_start = date.strftime("%Y-%m-%d")
@@ -134,7 +137,21 @@ def getAssetsData (request_data) :
         date_end = date_end.strftime("%Y-%m-%d")
 
         assets_data = yf.download(assets, start=date_start, end=date_end)
-        print(assets_data['Close'])  # This will show the adjusted close prices
+        assets_data = assets_data['Close'].to_numpy()[0]
+
+        result[date] = {}
+
+        if type(assets_data) == list :
+
+            for index in range(len(assets)):
+
+                result[date][assets[index]] = assets_data[index]
+
+        else :
+
+            result[date][assets[0]] = assets_data
+
+    return result
 
 def main():
 
@@ -157,6 +174,7 @@ def main():
 
         request_data = prepareDataToRequest(dividends)
         assets_data = getAssetsData(request_data)
+        print(assets_data)
 
     except Exception as ex:
 
