@@ -1,3 +1,4 @@
+import re
 import sys
 import math
 import glob
@@ -7,6 +8,8 @@ import yfinance as yf
 import pandas as pd
 import warnings
 import inspect
+import numpy as np
+import openpyxl
 from datetime import datetime
 from datetime import timedelta
 
@@ -100,7 +103,7 @@ def getDividendsFromTemplate(template_path) :
             line["payday"] = datetime.strptime(dividends[index_line][1], "%d/%m/%Y")
             line["broker"] = dividends[index_line][3]
             line["number_of_shares"] = int(dividends[index_line][4])
-            line["payment_by_shares"] = dividends[index_line][5]
+            line["payment_by_share"] = dividends[index_line][5]
             line["net_payment"] = dividends[index_line][6]
 
             result_dividends.append(line)
@@ -141,7 +144,7 @@ def getAssetsData (request_data) :
 
         result[date] = {}
 
-        if type(assets_data) == list :
+        if isinstance(assets_data, np.ndarray) :
 
             for index in range(len(assets)):
 
@@ -152,6 +155,47 @@ def getAssetsData (request_data) :
             result[date][assets[0]] = assets_data
 
     return result
+
+def prepareExcelData (assets, dividends, assets_data) :
+
+    excel_data = []
+    excel_data.append(["Date", "Base Asset", "Number Of Shares", "Gross Income", "Taxes", "Net Income", "Net Income By Share", "Share Price On Date", "Net Dividend Yield", "Average Price On Date", "Dividend Yield On Net Cost", "Type", "Broker"])
+
+    for index_line in range(len(dividends)):
+
+        line = []
+        line.append(dividends[index_line]["payday"].strftime("%d/%m/%Y"))
+        line.append(dividends[index_line]["ticker"])
+        line.append(dividends[index_line]["number_of_shares"])
+        gross_income = round(dividends[index_line]["payment_by_share"] * dividends[index_line]["number_of_shares"], 2)
+        line.append(gross_income)
+        taxes = round(gross_income - dividends[index_line]["net_payment"], 2)
+        line.append(taxes)
+        line.append(round(dividends[index_line]["net_payment"], 2))
+        net_income_by_share = round(dividends[index_line]["net_payment"]/dividends[index_line]["number_of_shares"], 2)
+        line.append(net_income_by_share)
+        share_price_on_date = round(assets_data[dividends[index_line]["payday"]][dividends[index_line]["ticker"] + ".SA"], 2)
+        line.append(share_price_on_date)
+        line.append(net_income_by_share/share_price_on_date)
+        average_price_on_date = round(assets[dividends[index_line]["ticker"]], 2)
+        line.append(average_price_on_date)
+        line.append(net_income_by_share/average_price_on_date)
+        numbers = re.findall('\d+\.\d+|\d+', dividends[index_line]["ticker"])
+        line.append(numbers[0])
+        line.append(dividends[index_line]["broker"])
+        excel_data.append(line)
+
+    return excel_data
+
+def createExcelFile (excel_data, template_path) :
+
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+
+    for row in excel_data:
+        sheet.append(row)
+
+    workbook.save(template_path + "my_excel_file.xlsx")
 
 def main():
 
@@ -174,11 +218,20 @@ def main():
 
         request_data = prepareDataToRequest(dividends)
         assets_data = getAssetsData(request_data)
-        print(assets_data)
 
     except Exception as ex:
 
         print("Something went wrong when trying to get yfinance data ...\n"+ str(ex))
+        sys.exit(0)
+
+    try:
+
+        excel_data = prepareExcelData(assets, dividends, assets_data)
+        createExcelFile(excel_data, template_path)
+
+    except Exception as ex:
+
+        print("Something went wrong when trying to create excel file ...\n"+ str(ex))
         sys.exit(0)
 
 
