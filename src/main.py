@@ -2,6 +2,7 @@ import re
 import sys
 import math
 import glob
+import time
 import os.path
 from pathlib import Path
 import yfinance as yf
@@ -153,6 +154,8 @@ def getAssetsData (request_data) :
         else :
 
             result[date][assets[0]] = assets_data
+
+        time.sleep(2)
 
     return result
 

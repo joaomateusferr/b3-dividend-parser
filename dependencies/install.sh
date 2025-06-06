@@ -8,4 +8,5 @@ else
     python3 -m pip install openpyxl --break-system-packages
     python3 -m pip install requests --break-system-packages
     python3 -m pip install yfinance --break-system-packages
+    #python3 -m pip install  yfinance --upgrade --break-system-packages
 fi
