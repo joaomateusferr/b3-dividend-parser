@@ -140,7 +140,7 @@ def getAssetsData (request_data) :
         date_end = date + timedelta(days=1)
         date_end = date_end.strftime("%Y-%m-%d")
 
-        assets_data = yf.download(assets, start=date_start, end=date_end)
+        assets_data = yf.download(assets, start=date_start, end=date_end, auto_adjust=True)
         assets_data = assets_data['Close'].to_numpy()[0]
 
         result[date] = {}
