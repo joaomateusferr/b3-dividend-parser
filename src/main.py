@@ -82,7 +82,7 @@ def getDividendsFromTemplate(template_path) :
 
     try:
 
-        excel_data_df = pd.read_excel(template_path+REQUIRED_FILES[1], sheet_name="Proventos Recebidos")
+        excel_data_df = pd.read_excel(template_path+REQUIRED_FILES[1], sheet_name="Proventos Recebidos", dtype=str)
         dividends = excel_data_df.to_numpy()
 
     except Exception as ex:
@@ -103,12 +103,14 @@ def getDividendsFromTemplate(template_path) :
             line["ticker"] = tokens[0].split()[0]
             line["payday"] = datetime.strptime(dividends[index_line][1], "%d/%m/%Y")
             line["broker"] = dividends[index_line][3]
-            line["number_of_shares"] = int(dividends[index_line][4])
-            line["payment_by_share"] = dividends[index_line][5]
-            line["net_payment"] = dividends[index_line][6]
+            line["number_of_shares"] = dividends[index_line][4].replace(".", "")
+            line["number_of_shares"] = int(line["number_of_shares"])
+            line["payment_by_share"] = float(dividends[index_line][5])
+            line["net_payment"] = float(dividends[index_line][6])
 
             result_dividends.append(line)
 
+    result_dividends.reverse()
     return result_dividends
 
 def prepareDataToRequest(dividends) :
